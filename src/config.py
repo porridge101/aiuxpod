@@ -56,12 +56,8 @@ SOURCES = [
     Source("Fast Company Co.Design", "https://www.fastcompany.com/co-design/rss", "design"),
     Source("A List Apart", "https://alistapart.com/main/feed/", "design"),
     Source("Sidebar.io", "https://sidebar.io/feed.xml", "design"),
-    # Placeholders: no native feed found. Fill in the Kill the Newsletter
-    # (killthenewsletter.com) generated feed URL once subscribed, then
-    # uncomment. See task #3 in the project plan.
-    # Source("The Rundown AI", "<killthenewsletter-feed-url>", "ai"),
-    # Source("TLDR AI", "<killthenewsletter-feed-url>", "ai"),
-    # Source("Ben's Bites", "<killthenewsletter-feed-url>", "ai"),
+    # The Rundown AI, TLDR AI, and Ben's Bites have no native RSS; they are
+    # scraped from their web archives instead - see src/newsletters.py.
 ]
 
 # Changelog/release-note feeds for the tools used day-to-day at work. Items

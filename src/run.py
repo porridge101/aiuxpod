@@ -8,6 +8,7 @@ from src.email_digest import send_digest
 from src.extract import _strip_html, enrich_items
 from src.feed_gen import EpisodeMeta, append_episode
 from src.fetch import fetch_recent_items
+from src.newsletters import fetch_newsletter_items
 from src.summarize import AEST, summarize
 from src.tts import synthesize_episode
 
@@ -22,6 +23,11 @@ def main() -> int:
 
     if failed_sources:
         print(f"  WARNING: {len(failed_sources)} source(s) failed: {', '.join(failed_sources)}")
+
+    print("Scraping newsletter archives...")
+    newsletter_items = fetch_newsletter_items()
+    print(f"  {len(newsletter_items)} newsletter issues")
+    raw_items += newsletter_items
 
     if not raw_items:
         print("No new items in the last 24h - quiet day, skipping publish.")
