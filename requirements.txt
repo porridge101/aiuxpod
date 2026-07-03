@@ -3,5 +3,4 @@ anthropic
 edge-tts
 trafilatura
 feedgen
-resend
 python-dotenv

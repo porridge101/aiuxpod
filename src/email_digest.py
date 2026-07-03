@@ -1,13 +1,13 @@
 import html as html_lib
-
-import resend
+import smtplib
+from email.mime.text import MIMEText
 
 from src.config import (
     BASE_URL,
     DIGEST_RECIPIENT_EMAIL,
-    DIGEST_SENDER_EMAIL,
     DIGEST_SENDER_NAME,
-    RESEND_API_KEY,
+    GMAIL_ADDRESS,
+    GMAIL_APP_PASSWORD,
 )
 from src.summarize import Story, ToolkitUpdate
 
@@ -87,15 +87,17 @@ def send_digest(
     toolkit_updates: list[ToolkitUpdate] | None = None,
 ) -> None:
     mp3_url = f"{BASE_URL}/{mp3_path}"
-    resend.api_key = RESEND_API_KEY
-    resend.Emails.send(
-        {
-            "from": f"{DIGEST_SENDER_NAME} <{DIGEST_SENDER_EMAIL}>",
-            "to": [DIGEST_RECIPIENT_EMAIL],
-            "subject": f"{DIGEST_SENDER_NAME} - {episode_date_str}",
-            "html": render_html(episode_date_str, mp3_url, stories, toolkit_updates),
-        }
+
+    msg = MIMEText(
+        render_html(episode_date_str, mp3_url, stories, toolkit_updates), "html"
     )
+    msg["Subject"] = f"{DIGEST_SENDER_NAME} - {episode_date_str}"
+    msg["From"] = f"{DIGEST_SENDER_NAME} <{GMAIL_ADDRESS}>"
+    msg["To"] = DIGEST_RECIPIENT_EMAIL
+
+    with smtplib.SMTP_SSL("smtp.gmail.com", 465) as smtp:
+        smtp.login(GMAIL_ADDRESS, GMAIL_APP_PASSWORD)
+        smtp.send_message(msg)
 
 
 if __name__ == "__main__":

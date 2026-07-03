@@ -6,19 +6,17 @@ from dotenv import load_dotenv
 load_dotenv()
 
 ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
-RESEND_API_KEY = os.environ.get("RESEND_API_KEY", "")
+
+GMAIL_ADDRESS = os.environ.get("GMAIL_ADDRESS", "rog.pete@gmail.com")
+# App Password from myaccount.google.com/apppasswords (requires 2FA).
+GMAIL_APP_PASSWORD = os.environ.get("GMAIL_APP_PASSWORD", "")
 
 CLAUDE_MODEL = "claude-haiku-4-5"
 
 # edge-tts voice. Australian options: en-AU-WilliamNeural (default), en-AU-NatashaNeural.
 TTS_VOICE = os.environ.get("TTS_VOICE", "en-AU-WilliamNeural")
 
-DIGEST_RECIPIENT_EMAIL = os.environ.get("DIGEST_RECIPIENT_EMAIL", "rog.pete@gmail.com")
-# Resend's shared testing sender - works without verifying your own domain,
-# but can only deliver to the email address you signed up to Resend with.
-# Verify a custom domain in Resend and change this once you want to send
-# to other recipients.
-DIGEST_SENDER_EMAIL = os.environ.get("DIGEST_SENDER_EMAIL", "onboarding@resend.dev")
+DIGEST_RECIPIENT_EMAIL = os.environ.get("DIGEST_RECIPIENT_EMAIL", "perogers@cotality.com")
 DIGEST_SENDER_NAME = "AI UX Porridge"
 
 EPISODES_DIR = "episodes"
