@@ -26,9 +26,7 @@ EPISODES_INDEX_PATH = "episodes.json"
 FEED_XML_PATH = "feed.xml"
 RETENTION_EPISODES = 30
 
-# Placeholder until Phase 2 sets up GitHub Pages hosting; update once the
-# repo is published so enclosure URLs resolve.
-BASE_URL = os.environ.get("BASE_URL", "https://example.github.io/RSS-Pod")
+BASE_URL = os.environ.get("BASE_URL", "https://porridge101.github.io/aiuxpod")
 
 PODCAST_TITLE = "AI + Design Daily"
 PODCAST_DESCRIPTION = "A daily 1-2 minute briefing on the top AI and product design news."
