@@ -9,7 +9,7 @@ from src.config import (
     DIGEST_SENDER_NAME,
     RESEND_API_KEY,
 )
-from src.summarize import Story
+from src.summarize import Story, ToolkitUpdate
 
 
 def _story_block(story: Story) -> str:
@@ -38,7 +38,33 @@ def _story_block(story: Story) -> str:
     """
 
 
-def render_html(episode_date_str: str, mp3_url: str, stories: list[Story]) -> str:
+def _toolkit_section(updates: list[ToolkitUpdate]) -> str:
+    if updates:
+        rows = "".join(
+            f"""<li style="margin-bottom:10px;">
+              <strong>{html_lib.escape(u.tool)}:</strong> {html_lib.escape(u.summary)}
+              <a href="{html_lib.escape(u.item.link)}" style="color:#0066cc;text-decoration:none;">Details &rarr;</a>
+            </li>"""
+            for u in updates
+        )
+        body = f'<ul style="margin:0;padding-left:20px;font-size:14px;color:#333;">{rows}</ul>'
+    else:
+        body = '<p style="font-size:14px;color:#888;margin:0;">No updates from your toolkit today.</p>'
+
+    return f"""
+    <tr><td style="padding:8px 0 0 0;border-top:1px solid #eee;">
+      <h2 style="font-size:16px;margin:16px 0 12px 0;">&#128295; Toolkit Updates</h2>
+      {body}
+    </td></tr>
+    """
+
+
+def render_html(
+    episode_date_str: str,
+    mp3_url: str,
+    stories: list[Story],
+    toolkit_updates: list[ToolkitUpdate] | None = None,
+) -> str:
     rows = "".join(_story_block(s) for s in stories)
     return f"""<!DOCTYPE html>
     <html><body style="font-family:-apple-system,Helvetica,Arial,sans-serif;background:#f7f7f7;padding:24px;">
@@ -49,11 +75,17 @@ def render_html(episode_date_str: str, mp3_url: str, stories: list[Story]) -> st
              padding:10px 16px;border-radius:8px;font-size:14px;text-decoration:none;">&#9654; Listen to today's episode</a>
         </td></tr>
         {rows}
+        {_toolkit_section(toolkit_updates or [])}
       </table>
     </body></html>"""
 
 
-def send_digest(episode_date_str: str, mp3_path: str, stories: list[Story]) -> None:
+def send_digest(
+    episode_date_str: str,
+    mp3_path: str,
+    stories: list[Story],
+    toolkit_updates: list[ToolkitUpdate] | None = None,
+) -> None:
     mp3_url = f"{BASE_URL}/{mp3_path}"
     resend.api_key = RESEND_API_KEY
     resend.Emails.send(
@@ -61,7 +93,7 @@ def send_digest(episode_date_str: str, mp3_path: str, stories: list[Story]) -> N
             "from": f"{DIGEST_SENDER_NAME} <{DIGEST_SENDER_EMAIL}>",
             "to": [DIGEST_RECIPIENT_EMAIL],
             "subject": f"{DIGEST_SENDER_NAME} - {episode_date_str}",
-            "html": render_html(episode_date_str, mp3_url, stories),
+            "html": render_html(episode_date_str, mp3_url, stories, toolkit_updates),
         }
     )
 

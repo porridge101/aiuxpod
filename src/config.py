@@ -28,7 +28,7 @@ RETENTION_EPISODES = 30
 
 BASE_URL = os.environ.get("BASE_URL", "https://porridge101.github.io/aiuxpod")
 
-PODCAST_TITLE = "AI + Design Daily"
+PODCAST_TITLE = "AI UX Porridge"
 PODCAST_DESCRIPTION = "A daily 1-2 minute briefing on the top AI and product design news."
 PODCAST_AUTHOR = "Pete Rogers"
 PODCAST_LANGUAGE = "en-AU"
@@ -54,12 +54,35 @@ SOURCES = [
     Source("UX Collective", "https://uxdesign.cc/feed", "design"),
     Source("Nielsen Norman Group", "https://www.nngroup.com/feed/rss/", "design"),
     Source("Smashing Magazine", "https://www.smashingmagazine.com/feed/", "design"),
+    Source("UX Planet", "https://uxplanet.org/feed", "design"),
+    Source("Fast Company Co.Design", "https://www.fastcompany.com/co-design/rss", "design"),
+    Source("A List Apart", "https://alistapart.com/main/feed/", "design"),
+    Source("Sidebar.io", "https://sidebar.io/feed.xml", "design"),
     # Placeholders: no native feed found. Fill in the Kill the Newsletter
     # (killthenewsletter.com) generated feed URL once subscribed, then
     # uncomment. See task #3 in the project plan.
     # Source("The Rundown AI", "<killthenewsletter-feed-url>", "ai"),
     # Source("TLDR AI", "<killthenewsletter-feed-url>", "ai"),
     # Source("Ben's Bites", "<killthenewsletter-feed-url>", "ai"),
+]
+
+# Changelog/release-note feeds for the tools used day-to-day at work. Items
+# from these land in the email's "Toolkit Updates" section, not the podcast
+# script. Hotjar has no public feed (Beamer widget); claude.ai app updates
+# have no feed either - Claude Code releases plus the general AI news feeds
+# are the closest proxies.
+TOOLKIT_SOURCES = [
+    Source("Figma", "https://www.figma.com/release-notes/feed/atom.xml", "toolkit"),
+    Source("GitHub Copilot", "https://github.blog/changelog/label/copilot/feed/", "toolkit"),
+    Source("Microsoft Copilot", "https://www.microsoft.com/en-us/microsoft-copilot/blog/feed/", "toolkit"),
+    Source("Copilot Studio", "https://www.microsoft.com/en-us/power-platform/blog/feed/", "toolkit"),
+    Source("Gemini", "https://blog.google/products/gemini/rss/", "toolkit"),
+    Source("Slack", "https://slack.com/release-notes/windows/rss", "toolkit"),
+    Source("Microsoft Clarity", "https://clarity.microsoft.com/blog/feed/", "toolkit"),
+    Source("Mixpanel", "https://docs.mixpanel.com/changelogs/rss.xml", "toolkit"),
+    Source("Miro", "https://miro.com/changelog/feed/", "toolkit"),
+    Source("Claude", "https://github.com/anthropics/claude-code/releases.atom", "toolkit"),
+    Source("Google Analytics", "https://blog.google/products/marketingplatform/rss/", "toolkit"),
 ]
 
 USER_AGENT = (

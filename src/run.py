@@ -2,13 +2,13 @@ import os
 import sys
 from datetime import datetime, timezone
 
-from src.config import SOURCES
+from src.config import PODCAST_TITLE, SOURCES, TOOLKIT_SOURCES
 from src.dedupe import dedupe_items
 from src.email_digest import send_digest
-from src.extract import enrich_items
+from src.extract import _strip_html, enrich_items
 from src.feed_gen import EpisodeMeta, append_episode
 from src.fetch import fetch_recent_items
-from src.summarize import summarize
+from src.summarize import AEST, summarize
 from src.tts import synthesize_episode
 
 
@@ -27,6 +27,16 @@ def main() -> int:
         print("No new items in the last 24h - quiet day, skipping publish.")
         return 0
 
+    print("Fetching toolkit updates...")
+    toolkit_items, toolkit_failed = fetch_recent_items(sources=TOOLKIT_SOURCES)
+    if toolkit_failed:
+        print(f"  WARNING: toolkit source(s) failed: {', '.join(toolkit_failed)}")
+    # Changelog feeds carry their content inline; strip markup but skip the
+    # full-page fetch that news items get.
+    for item in toolkit_items:
+        item.content = _strip_html(item.content)
+    print(f"  {len(toolkit_items)} toolkit items")
+
     print(f"Extracting full text for {len(raw_items)} items...")
     items = enrich_items(raw_items)
 
@@ -35,12 +45,16 @@ def main() -> int:
     print(f"  {len(deduped)} unique stories")
 
     print("Summarizing with Claude...")
-    episode = summarize(deduped)
+    episode = summarize(deduped, toolkit_items=toolkit_items)
     word_count = len(episode.script.split())
-    print(f"  Script: {word_count} words, {len(episode.stories)} stories")
+    print(
+        f"  Script: {word_count} words, {len(episode.stories)} stories, "
+        f"{len(episode.toolkit_updates)} toolkit updates"
+    )
 
     print("Generating audio...")
-    date_str = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    # AEST, so the episode date matches the date spoken in the script.
+    date_str = datetime.now(AEST).strftime("%Y-%m-%d")
     try:
         mp3_path = synthesize_episode(episode.script, date_str)
     except Exception as e:
@@ -57,7 +71,7 @@ def main() -> int:
     append_episode(
         EpisodeMeta(
             date=date_str,
-            title=f"AI + Design Daily - {date_str}",
+            title=f"{PODCAST_TITLE} - {date_str}",
             description=episode.script,
             mp3_path=mp3_path,
             mp3_bytes=os.path.getsize(mp3_path),
@@ -66,7 +80,7 @@ def main() -> int:
     )
 
     print("Sending email digest...")
-    send_digest(date_str, mp3_path, episode.stories)
+    send_digest(date_str, mp3_path, episode.stories, episode.toolkit_updates)
 
     print("Done.")
     return 0

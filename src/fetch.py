@@ -46,7 +46,9 @@ def _entry_image(entry) -> str | None:
     return None
 
 
-def fetch_recent_items(hours: int = 24) -> tuple[list[Item], list[str]]:
+def fetch_recent_items(
+    hours: int = 24, sources: list | None = None
+) -> tuple[list[Item], list[str]]:
     """Returns (items, failed_source_names). A source is "failed" only when
     it couldn't be parsed at all (network/format error), not when it simply
     has no recent items."""
@@ -54,7 +56,7 @@ def fetch_recent_items(hours: int = 24) -> tuple[list[Item], list[str]]:
     items: list[Item] = []
     failed_sources: list[str] = []
 
-    for source in SOURCES:
+    for source in sources if sources is not None else SOURCES:
         feed = feedparser.parse(source.url, request_headers={"User-Agent": USER_AGENT})
         if feed.bozo and not feed.entries:
             print(f"  WARNING: could not parse {source.name} ({source.url}): {feed.bozo_exception}")

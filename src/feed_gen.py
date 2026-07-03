@@ -97,7 +97,7 @@ if __name__ == "__main__":
     append_episode(
         EpisodeMeta(
             date=date_str,
-            title=f"AI + Design Daily - {date_str}",
+            title=f"{PODCAST_TITLE} - {date_str}",
             description=script,
             mp3_path=mp3_path,
             mp3_bytes=os.path.getsize(mp3_path),
