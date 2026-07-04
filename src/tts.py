@@ -3,11 +3,11 @@ import os
 
 import edge_tts
 
-from src.config import EPISODES_DIR, TTS_VOICE
+from src.config import EPISODES_DIR, TTS_RATE, TTS_VOICE
 
 
 async def _synthesize(text: str, out_path: str) -> None:
-    communicate = edge_tts.Communicate(text, TTS_VOICE)
+    communicate = edge_tts.Communicate(text, TTS_VOICE, rate=TTS_RATE)
     await communicate.save(out_path)
 
 

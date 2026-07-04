@@ -17,9 +17,19 @@ PUBLISH_TOOL = {
             "script": {
                 "type": "string",
                 "description": (
-                    "The ~300 word (250-350 word) audio script. Conversational, direct tone. "
-                    "Open with the date, go straight into the stories, no 'welcome to the show' "
-                    "fluff, end with a one-line sign-off."
+                    "The ~300 word (250-350 word) audio script for the news stories. "
+                    "Casual spoken English. Open with the date, go straight into the "
+                    "stories, no 'welcome to the show' fluff. Do NOT include the toolkit "
+                    "updates or a sign-off here - they go in toolkit_script."
+                ),
+            },
+            "toolkit_script": {
+                "type": "string",
+                "description": (
+                    "A short spoken segment (40-80 words) read after the news stories, "
+                    "opening with a clear pivot like 'Quick toolkit check before you go.' "
+                    "One casual sentence per toolkit update, then a one-line sign-off. "
+                    "If there are no toolkit updates, just write the sign-off."
                 ),
             },
             "stories": {
@@ -74,25 +84,32 @@ PUBLISH_TOOL = {
                 },
             },
         },
-        "required": ["script", "stories", "toolkit_updates"],
+        "required": ["script", "toolkit_script", "stories", "toolkit_updates"],
     },
 }
 
-SYSTEM_PROMPT = """You produce a daily AI + product-design news podcast script and email digest.
+SYSTEM_PROMPT = """You produce a daily AI + product-design news podcast script and email digest. The listener is an Australian product designer catching up over breakfast.
+
+Voice and tone for anything spoken (script and toolkit_script):
+- Write the way a sharp, friendly colleague talks, not the way a news anchor reads. Contractions always ("it's", "they're", "won't"). Short sentences. Plain words over corporate ones.
+- Signpost every story change so the listener always knows where they are: "First up...", "Next one...", "Now for some design news...", "Last one for today...". Vary these naturally; never number stories like a list.
+- One conversational aside or reaction per episode is welcome ("which, honestly, was overdue") - it keeps things human. Don't overdo it.
+- Put a blank line between stories; it reads as a natural pause in the audio.
+- No emojis, no headings, no formatting - this text is read aloud verbatim.
 
 Rules for the script and stories:
 - Only use the stories provided below. Never invent stories, facts, or details not present in the source material.
 - Dedupe overlapping coverage of the same story; pick the single most informative source for it.
 - Pick the top 3-5 stories overall, mixing general AI news and product/UX design news.
 - REQUIRED: at least one chosen story must come from a design-category item whenever any are provided. Pick the most substantial one available, even on a slow design day.
-- The script must stay within 250-350 words.
+- The script must stay within 250-350 words. Casual does not mean longer: keep each story to 60-80 words, and cut the weakest story rather than squeezing five in.
 - Every story you pick for the script must also appear in the structured "stories" output, referenced by its id.
-- Items marked (toolkit) are for toolkit_updates only, never for the script or stories.
+- Items marked (toolkit) are for toolkit_updates and toolkit_script only, never for the script or stories.
 
-Rules for toolkit_updates:
+Rules for toolkit_updates and toolkit_script:
 - Cover new features or meaningful changes in the toolkit items that a product designer would care about.
 - Skip routine patch releases, version-bump-only notes, marketing fluff, and anything with no user-facing change.
-- Empty array is the right answer when nothing qualifies.
+- Empty array (and a sign-off-only toolkit_script) is the right answer when nothing qualifies.
 """
 
 
@@ -127,6 +144,14 @@ class Episode:
     script: str
     stories: list[Story]
     toolkit_updates: list[ToolkitUpdate] = field(default_factory=list)
+    toolkit_script: str = ""
+
+    @property
+    def full_script(self) -> str:
+        """Everything read aloud: news stories, then the toolkit segment."""
+        if self.toolkit_script:
+            return f"{self.script}\n\n{self.toolkit_script}"
+        return self.script
 
 
 def _has_design_story(stories: list[dict], items: list[Item]) -> bool:
@@ -153,17 +178,28 @@ def summarize(items: list[Item], toolkit_items: list[Item] | None = None) -> Epi
     messages = [{"role": "user", "content": _build_user_prompt(all_items)}]
     result = _call_claude(client, messages)
 
-    # The min-one-design rule occasionally gets ignored; one corrective retry.
+    # Constraints occasionally get ignored; one corrective retry covers them.
+    problems = []
     design_available = any(i.category == "design" for i in items)
     if design_available and not _has_design_story(result["stories"], all_items):
-        print("  WARNING: no design story chosen, retrying with correction")
-        messages.append(
-            {"role": "user", "content": (
-                "Your selection contains no design-category story, but design items were "
-                "provided. Redo the episode including at least one design-category story."
-            )}
+        problems.append(
+            "Your selection contains no design-category story, but design items were "
+            "provided. Include at least one design-category story."
         )
-        result = _call_claude(client, messages)
+    word_count = len(result["script"].split())
+    if word_count > 370:
+        problems.append(
+            f"Your script is {word_count} words; the hard limit is 350. Rewrite it at "
+            "280-330 words. Tighten every story; drop the weakest one if needed."
+        )
+    if problems:
+        print(f"  WARNING: retrying with correction: {' / '.join(problems)}")
+        corrected = (
+            _build_user_prompt(all_items)
+            + "\n\nIMPORTANT - your previous attempt failed these requirements, fix them: "
+            + " ".join(problems)
+        )
+        result = _call_claude(client, [{"role": "user", "content": corrected}])
 
     stories = [
         Story(id=s["id"], headline=s["headline"], bullets=s["bullets"], item=all_items[s["id"]])
@@ -174,7 +210,12 @@ def summarize(items: list[Item], toolkit_items: list[Item] | None = None) -> Epi
         for u in result.get("toolkit_updates", [])
         if 0 <= u["id"] < len(all_items)
     ]
-    return Episode(script=result["script"], stories=stories, toolkit_updates=toolkit_updates)
+    return Episode(
+        script=result["script"],
+        stories=stories,
+        toolkit_updates=toolkit_updates,
+        toolkit_script=result.get("toolkit_script", ""),
+    )
 
 
 if __name__ == "__main__":

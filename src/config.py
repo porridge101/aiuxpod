@@ -15,6 +15,8 @@ CLAUDE_MODEL = "claude-haiku-4-5"
 
 # edge-tts voice. Australian options: en-AU-WilliamNeural (default), en-AU-NatashaNeural.
 TTS_VOICE = os.environ.get("TTS_VOICE", "en-AU-WilliamNeural")
+# Slightly quicker than default reads as more natural speech, less newsreader.
+TTS_RATE = os.environ.get("TTS_RATE", "+8%")
 
 DIGEST_RECIPIENT_EMAIL = os.environ.get("DIGEST_RECIPIENT_EMAIL", "perogers@cotality.com")
 DIGEST_SENDER_NAME = "AI UX Porridge"

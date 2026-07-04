@@ -62,7 +62,7 @@ def main() -> int:
     # AEST, so the episode date matches the date spoken in the script.
     date_str = datetime.now(AEST).strftime("%Y-%m-%d")
     try:
-        mp3_path = synthesize_episode(episode.script, date_str)
+        mp3_path = synthesize_episode(episode.full_script, date_str)
     except Exception as e:
         print(f"ERROR: TTS failed: {e}", file=sys.stderr)
         return 1
@@ -78,7 +78,7 @@ def main() -> int:
         EpisodeMeta(
             date=date_str,
             title=f"{PODCAST_TITLE} - {date_str}",
-            description=episode.script,
+            description=episode.full_script,
             mp3_path=mp3_path,
             mp3_bytes=os.path.getsize(mp3_path),
             pub_date=datetime.now(timezone.utc).isoformat(),
