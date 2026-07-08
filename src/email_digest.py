@@ -1,5 +1,6 @@
 import html as html_lib
 import smtplib
+from datetime import datetime
 from email.mime.text import MIMEText
 
 from src.config import (
@@ -38,6 +39,25 @@ def _story_block(story: Story) -> str:
     """
 
 
+def _friendly_date(date_str: str) -> str:
+    """'2026-12-05' -> 'Saturday 5th December 2026'."""
+    day = datetime.strptime(date_str, "%Y-%m-%d")
+    n = day.day
+    suffix = "th" if 11 <= n <= 13 else {1: "st", 2: "nd", 3: "rd"}.get(n % 10, "th")
+    return day.strftime(f"%A {n}{suffix} %B %Y")
+
+
+def _joke_section(joke: str) -> str:
+    if not joke:
+        return ""
+    return f"""
+    <tr><td style="padding:8px 0 0 0;border-top:1px solid #eee;">
+      <h2 style="font-size:16px;margin:16px 0 12px 0;">&#128514; One for the road</h2>
+      <p style="font-size:14px;color:#333;margin:0;font-style:italic;">{html_lib.escape(joke)}</p>
+    </td></tr>
+    """
+
+
 def _toolkit_section(updates: list[ToolkitUpdate]) -> str:
     if updates:
         rows = "".join(
@@ -64,18 +84,28 @@ def render_html(
     mp3_url: str,
     stories: list[Story],
     toolkit_updates: list[ToolkitUpdate] | None = None,
+    national_day: str = "",
+    joke: str = "",
 ) -> str:
     rows = "".join(_story_block(s) for s in stories)
+    national_day_html = ""
+    if national_day:
+        national_day_html = (
+            f'<div style="font-size:14px;color:#666;margin:0 0 10px 0;">'
+            f"&#127881; It's {html_lib.escape(national_day)}!</div>"
+        )
     return f"""<!DOCTYPE html>
     <html><body style="font-family:-apple-system,Helvetica,Arial,sans-serif;background:#f7f7f7;padding:24px;">
       <table role="presentation" style="max-width:600px;margin:0 auto;background:#fff;padding:24px;border-radius:12px;">
         <tr><td style="padding-bottom:20px;">
-          <h1 style="font-size:20px;margin:0 0 10px 0;">{html_lib.escape(DIGEST_SENDER_NAME)} — {episode_date_str}</h1>
+          <h1 style="font-size:20px;margin:0 0 6px 0;">{html_lib.escape(DIGEST_SENDER_NAME)} — {_friendly_date(episode_date_str)}</h1>
+          {national_day_html}
           <a href="{html_lib.escape(mp3_url)}" style="display:inline-block;background:#111;color:#fff;
              padding:10px 16px;border-radius:8px;font-size:14px;text-decoration:none;">&#9654; Listen to today's episode</a>
         </td></tr>
         {rows}
         {_toolkit_section(toolkit_updates or [])}
+        {_joke_section(joke)}
       </table>
     </body></html>"""
 
@@ -85,11 +115,14 @@ def send_digest(
     mp3_path: str,
     stories: list[Story],
     toolkit_updates: list[ToolkitUpdate] | None = None,
+    national_day: str = "",
+    joke: str = "",
 ) -> None:
     mp3_url = f"{BASE_URL}/{mp3_path}"
 
     msg = MIMEText(
-        render_html(episode_date_str, mp3_url, stories, toolkit_updates), "html"
+        render_html(episode_date_str, mp3_url, stories, toolkit_updates, national_day, joke),
+        "html",
     )
     msg["Subject"] = f"{DIGEST_SENDER_NAME} - {episode_date_str}"
     msg["From"] = f"{DIGEST_SENDER_NAME} <{GMAIL_ADDRESS}>"

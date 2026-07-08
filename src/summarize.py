@@ -26,10 +26,26 @@ PUBLISH_TOOL = {
             "toolkit_script": {
                 "type": "string",
                 "description": (
-                    "A short spoken segment (40-80 words) read after the news stories, "
-                    "opening with a clear pivot like 'Quick toolkit check before you go.' "
-                    "One casual sentence per toolkit update, then a one-line sign-off. "
-                    "If there are no toolkit updates, just write the sign-off."
+                    "A short spoken segment (50-110 words) read after the news stories. "
+                    "Opens with a clear pivot like 'Quick toolkit check before you go.' "
+                    "One casual sentence per toolkit update (skip the pivot entirely if "
+                    "there are none). Then deliver today's joke, set up naturally ('Oh, "
+                    "and before I go - heard this one today...'), then a one-line sign-off."
+                ),
+            },
+            "national_day": {
+                "type": "string",
+                "description": (
+                    "The name of the national/world day you picked for the opening "
+                    "shoutout, e.g. 'National Freezer Pop Day'. Empty string if none "
+                    "were provided."
+                ),
+            },
+            "joke": {
+                "type": "string",
+                "description": (
+                    "The joke you picked, as clean readable text for the email "
+                    "(setup and punchline). Empty string if no candidates were provided."
                 ),
             },
             "stories": {
@@ -84,7 +100,7 @@ PUBLISH_TOOL = {
                 },
             },
         },
-        "required": ["script", "toolkit_script", "stories", "toolkit_updates"],
+        "required": ["script", "toolkit_script", "stories", "toolkit_updates", "national_day", "joke"],
     },
 }
 
@@ -93,9 +109,19 @@ SYSTEM_PROMPT = """You produce a daily AI + product-design news podcast script a
 Voice and tone for anything spoken (script and toolkit_script):
 - Write the way a sharp, friendly colleague talks, not the way a news anchor reads. Contractions always ("it's", "they're", "won't"). Short sentences. Plain words over corporate ones.
 - Signpost every story change so the listener always knows where they are: "First up...", "Next one...", "Now for some design news...", "Last one for today...". Vary these naturally; never number stories like a list.
+- Sound like an actual human recording in one take, imperfections included. Sprinkle in exactly 1-2 natural human moments per episode, varied day to day: a quick self-correction ("that's Tuesday's- sorry, Wednesday's announcement"), a sip of tea mid-episode ("hang on... [sip of tea] ...right, where was I"), a trailing thought ("which is... yeah, a lot of money"), or a casual filler ("look,", "righto,", "anyway-"). Keep them small and believable; never more than 2 or it becomes a bit.
+- Ellipses and dashes read as natural pauses; use them for the human moments.
 - One conversational aside or reaction per episode is welcome ("which, honestly, was overdue") - it keeps things human. Don't overdo it.
 - Put a blank line between stories; it reads as a natural pause in the audio.
-- No emojis, no headings, no formatting - this text is read aloud verbatim.
+- No emojis, no headings, no stage directions in square brackets except a single [sip of tea]-style beat written as words ("quick sip of tea... okay"); this text is read aloud verbatim.
+
+Opening (in the script):
+- Open with the date, then a quick shoutout to the funniest or most interesting national/world day from the list provided ("It's also National Freezer Pop Day, so celebrate accordingly"). One or two lines max, then into the news. If no national days were provided, skip straight to the news.
+
+The joke (in toolkit_script):
+- Pick the funniest candidate joke provided - the one that lands best read aloud. Rude and adult humour is absolutely fine; skip anything hateful, racist, or targeting real people.
+- Retell it naturally in the host's voice rather than reading it verbatim. Setup, beat, punchline, sign-off.
+- If no jokes were provided, go straight to the sign-off.
 
 Rules for the script and stories:
 - Only use the stories provided below. Never invent stories, facts, or details not present in the source material.
@@ -113,7 +139,9 @@ Rules for toolkit_updates and toolkit_script:
 """
 
 
-def _build_user_prompt(items: list[Item]) -> str:
+def _build_user_prompt(
+    items: list[Item], national_days: list[str], jokes: list[str]
+) -> str:
     today = datetime.now(AEST).strftime("%A, %d %B %Y")
     lines = [f"Today's date (AEST): {today}", "", "Source items:"]
     for idx, item in enumerate(items):
@@ -121,6 +149,12 @@ def _build_user_prompt(items: list[Item]) -> str:
         lines.append(
             f"\n[id={idx}] ({item.category}) {item.title}\nSource: {item.source}\n{snippet}"
         )
+    if national_days:
+        lines.append("\nToday's national/world days (pick one for the opening shoutout):")
+        lines.extend(f"- {d}" for d in national_days)
+    if jokes:
+        lines.append("\nCandidate jokes from r/Jokes (pick one for the closer):")
+        lines.extend(f"- {j}" for j in jokes)
     return "\n".join(lines)
 
 
@@ -145,6 +179,8 @@ class Episode:
     stories: list[Story]
     toolkit_updates: list[ToolkitUpdate] = field(default_factory=list)
     toolkit_script: str = ""
+    national_day: str = ""
+    joke: str = ""
 
     @property
     def full_script(self) -> str:
@@ -170,12 +206,20 @@ def _call_claude(client, messages) -> dict:
     return next(block for block in response.content if block.type == "tool_use").input
 
 
-def summarize(items: list[Item], toolkit_items: list[Item] | None = None) -> Episode:
+def summarize(
+    items: list[Item],
+    toolkit_items: list[Item] | None = None,
+    national_days: list[str] | None = None,
+    jokes: list[str] | None = None,
+) -> Episode:
     toolkit_items = toolkit_items or []
+    national_days = national_days or []
+    jokes = jokes or []
     all_items = items + toolkit_items
 
     client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
-    messages = [{"role": "user", "content": _build_user_prompt(all_items)}]
+    user_prompt = _build_user_prompt(all_items, national_days, jokes)
+    messages = [{"role": "user", "content": user_prompt}]
     result = _call_claude(client, messages)
 
     # Constraints occasionally get ignored; one corrective retry covers them.
@@ -195,7 +239,7 @@ def summarize(items: list[Item], toolkit_items: list[Item] | None = None) -> Epi
     if problems:
         print(f"  WARNING: retrying with correction: {' / '.join(problems)}")
         corrected = (
-            _build_user_prompt(all_items)
+            user_prompt
             + "\n\nIMPORTANT - your previous attempt failed these requirements, fix them: "
             + " ".join(problems)
         )
@@ -215,6 +259,8 @@ def summarize(items: list[Item], toolkit_items: list[Item] | None = None) -> Epi
         stories=stories,
         toolkit_updates=toolkit_updates,
         toolkit_script=result.get("toolkit_script", ""),
+        national_day=result.get("national_day", ""),
+        joke=result.get("joke", ""),
     )
 
 

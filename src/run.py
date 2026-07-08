@@ -6,6 +6,7 @@ from src.config import PODCAST_TITLE, SOURCES, TOOLKIT_SOURCES
 from src.dedupe import dedupe_items
 from src.email_digest import send_digest
 from src.extract import _strip_html, enrich_items
+from src.extras import fetch_national_days, fetch_reddit_jokes
 from src.feed_gen import EpisodeMeta, append_episode
 from src.fetch import fetch_recent_items
 from src.newsletters import fetch_newsletter_items
@@ -50,8 +51,15 @@ def main() -> int:
     deduped = dedupe_items(items)
     print(f"  {len(deduped)} unique stories")
 
+    print("Fetching extras (national days, jokes)...")
+    national_days = fetch_national_days(datetime.now(AEST))
+    jokes = fetch_reddit_jokes()
+    print(f"  {len(national_days)} national days, {len(jokes)} candidate jokes")
+
     print("Summarizing with Claude...")
-    episode = summarize(deduped, toolkit_items=toolkit_items)
+    episode = summarize(
+        deduped, toolkit_items=toolkit_items, national_days=national_days, jokes=jokes
+    )
     word_count = len(episode.script.split())
     print(
         f"  Script: {word_count} words, {len(episode.stories)} stories, "
@@ -86,7 +94,14 @@ def main() -> int:
     )
 
     print("Sending email digest...")
-    send_digest(date_str, mp3_path, episode.stories, episode.toolkit_updates)
+    send_digest(
+        date_str,
+        mp3_path,
+        episode.stories,
+        episode.toolkit_updates,
+        episode.national_day,
+        episode.joke,
+    )
 
     print("Done.")
     return 0
