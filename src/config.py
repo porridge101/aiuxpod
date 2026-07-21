@@ -13,10 +13,39 @@ GMAIL_APP_PASSWORD = os.environ.get("GMAIL_APP_PASSWORD", "")
 
 CLAUDE_MODEL = "claude-haiku-4-5"
 
-# edge-tts voice. Australian options: en-AU-WilliamNeural (default), en-AU-NatashaNeural.
-TTS_VOICE = os.environ.get("TTS_VOICE", "en-AU-WilliamNeural")
+# edge-tts voice. Set to pin every episode to one voice; unset (default) rotates
+# through VOICE_POOL below so the host isn't the same person every day.
+TTS_VOICE = os.environ.get("TTS_VOICE", "")
 # Slightly quicker than default reads as more natural speech, less newsreader.
 TTS_RATE = os.environ.get("TTS_RATE", "+8%")
+
+# Pool of English neural voices spanning different accents/genders that
+# episodes rotate through (see tts.voice_for_date). Only used when TTS_VOICE
+# is unset.
+VOICE_POOL = [
+    "en-AU-WilliamMultilingualNeural",  # Australian, male
+    "en-AU-NatashaNeural",  # Australian, female
+    "en-GB-RyanNeural",  # British, male
+    "en-GB-SoniaNeural",  # British, female
+    "en-GB-ThomasNeural",  # British, male
+    "en-GB-LibbyNeural",  # British, female
+    # US picks are the ones Microsoft tags casual/conversational rather than
+    # "Authority"/"Rational" - the authoritative ones read as newsreaders.
+    "en-US-BrianNeural",  # American, male - approachable, casual, sincere
+    "en-US-EmmaNeural",  # American, female - cheerful, conversational
+    "en-US-AndrewNeural",  # American, male - warm, authentic
+    "en-US-AvaNeural",  # American, female - expressive, friendly
+    "en-IE-ConnorNeural",  # Irish, male
+    "en-IE-EmilyNeural",  # Irish, female
+    "en-NZ-MitchellNeural",  # New Zealand, male
+    "en-NZ-MollyNeural",  # New Zealand, female
+    "en-CA-LiamNeural",  # Canadian, male
+    "en-CA-ClaraNeural",  # Canadian, female
+    "en-ZA-LukeNeural",  # South African, male
+    "en-ZA-LeahNeural",  # South African, female
+    "en-IN-PrabhatNeural",  # Indian, male
+    "en-IN-NeerjaNeural",  # Indian, female
+]
 
 DIGEST_RECIPIENT_EMAIL = os.environ.get("DIGEST_RECIPIENT_EMAIL", "perogers@cotality.com")
 DIGEST_SENDER_NAME = "AI UX Porridge"

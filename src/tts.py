@@ -1,20 +1,32 @@
 import asyncio
+import hashlib
 import os
 
 import edge_tts
 
-from src.config import EPISODES_DIR, TTS_RATE, TTS_VOICE
+from src.config import EPISODES_DIR, TTS_RATE, TTS_VOICE, VOICE_POOL
 
 
-async def _synthesize(text: str, out_path: str) -> None:
-    communicate = edge_tts.Communicate(text, TTS_VOICE, rate=TTS_RATE)
+def voice_for_date(episode_date: str) -> str:
+    """Deterministically picks a voice for the given date (YYYY-MM-DD) so
+    reruns are stable, but different dates land on different voices/accents."""
+    if TTS_VOICE:
+        return TTS_VOICE
+    digest = hashlib.sha256(episode_date.encode()).hexdigest()
+    return VOICE_POOL[int(digest, 16) % len(VOICE_POOL)]
+
+
+async def _synthesize(text: str, out_path: str, voice: str) -> None:
+    communicate = edge_tts.Communicate(text, voice, rate=TTS_RATE)
     await communicate.save(out_path)
 
 
 def synthesize_episode(script: str, episode_date: str) -> str:
     os.makedirs(EPISODES_DIR, exist_ok=True)
     out_path = os.path.join(EPISODES_DIR, f"{episode_date}.mp3")
-    asyncio.run(_synthesize(script, out_path))
+    voice = voice_for_date(episode_date)
+    print(f"  Voice: {voice}")
+    asyncio.run(_synthesize(script, out_path, voice))
     return out_path
 
 

@@ -29,8 +29,10 @@ PUBLISH_TOOL = {
                     "A short spoken segment (50-110 words) read after the news stories. "
                     "Opens with a clear pivot like 'Quick toolkit check before you go.' "
                     "One casual sentence per toolkit update (skip the pivot entirely if "
-                    "there are none). Then deliver today's joke, set up naturally ('Oh, "
-                    "and before I go - heard this one today...'), then a one-line sign-off."
+                    "there are none). Then deliver today's joke with exactly ONE short "
+                    "lead-in - 'Oh, and before I go, heard this one today' - never two "
+                    "stacked lead-ins. Keep the joke to 2-3 sentences, then a one-line "
+                    "sign-off."
                 ),
             },
             "national_day": {
@@ -70,8 +72,17 @@ PUBLISH_TOOL = {
                             "items": {"type": "string"},
                             "description": "Exactly 3 bullet points with the key information.",
                         },
+                        "topic": {
+                            "type": "string",
+                            "enum": ["ai", "design"],
+                            "description": (
+                                "What the story is actually about, regardless of which "
+                                "outlet ran it: 'design' for product/UX/design-systems/"
+                                "design-tooling stories, 'ai' otherwise."
+                            ),
+                        },
                     },
-                    "required": ["id", "headline", "bullets"],
+                    "required": ["id", "headline", "bullets", "topic"],
                 },
             },
             "toolkit_updates": {
@@ -116,11 +127,19 @@ Voice and tone for anything spoken (script and toolkit_script):
 - No emojis, no headings, no stage directions in square brackets except a single [sip of tea]-style beat written as words ("quick sip of tea... okay"); this text is read aloud verbatim.
 
 Opening (in the script):
-- Open with the date, then a quick shoutout to the funniest or most interesting national/world day from the list provided ("It's also National Freezer Pop Day, so celebrate accordingly"). One or two lines max, then into the news. If no national days were provided, skip straight to the news.
+- Open with the date, then the day-of-week greeting below if there is one for today.
+- Then a quick shoutout to the funniest or most interesting national/world day from the list provided, and land a deliberately groan-worthy pun or bit of wordplay built off its name. "It's also National Freezer Pop Day, so let's hope today's news doesn't leave you cold." / "It's National Video Game Day - try not to get too controller-ing in your stand-up." Cheesy is the target; a bad pun beats a clever one here, and commit to it rather than apologising for it.
+- Keep the whole opening to two or three lines, then into the news. If no national days were provided, skip the shoutout.
+
+Day-of-week greeting (Mondays and Fridays only, straight after the date):
+- Monday: wry sympathy that it's Monday. "Sorry - it's Monday. I don't make the rules." Rueful, never chirpy.
+- Friday: genuine Friday cheer. "Happy Friday, you've basically made it."
+- Every other day: no greeting at all, straight into the national day.
 
 The joke (in toolkit_script):
-- Pick the funniest candidate joke provided - the one that lands best read aloud. Rude and adult humour is absolutely fine; skip anything hateful, racist, or targeting real people.
-- Retell it naturally in the host's voice rather than reading it verbatim. Setup, beat, punchline, sign-off.
+- Pick the funniest candidate joke provided - the one that lands best read aloud.
+- Keep it work-appropriate; this gets played in an office and around colleagues. Wordplay, puns, absurd situations, and mild innuendo are fine. Skip anything explicitly sexual, crude about bodies or bodily functions, built on swearing, or hateful/targeting real people. If every candidate is too blue, write your own clean pun instead rather than forcing one.
+- Retell it naturally in the host's voice rather than reading it verbatim, but keep it tight: 2-3 sentences total, setup straight into punchline. Cut any extra buildup, asides, or a second beat.
 - If no jokes were provided, go straight to the sign-off.
 
 Rules for the script and stories:
@@ -191,7 +210,11 @@ class Episode:
 
 
 def _has_design_story(stories: list[dict], items: list[Item]) -> bool:
-    return any(items[s["id"]].category == "design" for s in stories)
+    """Design coverage counts by topic, not by outlet - design-system and
+    design-tooling stories often run in AI-category sources."""
+    return any(
+        s.get("topic") == "design" or items[s["id"]].category == "design" for s in stories
+    )
 
 
 def _call_claude(client, messages) -> dict:
@@ -223,21 +246,24 @@ def summarize(
     result = _call_claude(client, messages)
 
     # Constraints occasionally get ignored; one corrective retry covers them.
-    problems = []
     design_available = any(i.category == "design" for i in items)
-    if design_available and not _has_design_story(result["stories"], all_items):
-        problems.append(
-            "Your selection contains no design-category story, but design items were "
-            "provided. Include at least one design-category story."
-        )
-    word_count = len(result["script"].split())
-    if word_count > 370:
-        problems.append(
-            f"Your script is {word_count} words; the hard limit is 350. Rewrite it at "
-            "280-330 words. Tighten every story; drop the weakest one if needed."
-        )
-    if problems:
-        print(f"  WARNING: retrying with correction: {' / '.join(problems)}")
+    for attempt in range(2):
+        problems = []
+        if design_available and not _has_design_story(result["stories"], all_items):
+            problems.append(
+                "Your selection contains no design-category story, but design items were "
+                "provided. Include at least one design-category story."
+            )
+        word_count = len(result["script"].split())
+        if word_count > 350:
+            problems.append(
+                f"Your script is {word_count} words; the hard limit is 350 and you must "
+                "come in under it. Rewrite at 270-320 words - cut a whole story rather "
+                "than trimming each one evenly."
+            )
+        if not problems:
+            break
+        print(f"  WARNING: retry {attempt + 1}: {' / '.join(problems)}")
         corrected = (
             user_prompt
             + "\n\nIMPORTANT - your previous attempt failed these requirements, fix them: "
