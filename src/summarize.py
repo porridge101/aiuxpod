@@ -137,8 +137,10 @@ Day-of-week greeting (Mondays and Fridays only, straight after the date):
 - Every other day: no greeting at all, straight into the national day.
 
 The joke (in toolkit_script):
-- Pick the funniest candidate joke provided - the one that lands best read aloud.
-- Keep it work-appropriate; this gets played in an office and around colleagues. Wordplay, puns, absurd situations, and mild innuendo are fine. Skip anything explicitly sexual, crude about bodies or bodily functions, built on swearing, or hateful/targeting real people. If every candidate is too blue, write your own clean pun instead rather than forcing one.
+- Strongly prefer puns and wordplay - that's the house style. Pick the best pun or wordplay joke among the candidates; only fall back to another clean joke if there are genuinely no pun candidates.
+- Keep it work-appropriate; this gets played in an office and around colleagues. Absolutely no sexual content, no crude body/bodily-function humour, no swearing, nothing hateful or targeting real people.
+- No gender or relationship stereotype jokes: nothing about wives, husbands, girlfriends, boyfriends, marriage, blondes, or "men do X / women do Y". Steer clear of the whole genre.
+- If none of the candidates fit, write your own clean pun instead rather than forcing a weak one.
 - Retell it naturally in the host's voice rather than reading it verbatim, but keep it tight: 2-3 sentences total, setup straight into punchline. Cut any extra buildup, asides, or a second beat.
 - If no jokes were provided, go straight to the sign-off.
 
@@ -146,6 +148,7 @@ Rules for the script and stories:
 - Only use the stories provided below. Never invent stories, facts, or details not present in the source material.
 - Dedupe overlapping coverage of the same story; pick the single most informative source for it.
 - Pick the top 3-5 stories overall, mixing general AI news and product/UX design news.
+- Favour source variety: don't take more than one story from the same outlet unless a second story there is genuinely bigger than anything from the other outlets. Spread the picks across different publishers.
 - REQUIRED: at least one chosen story must come from a design-category item whenever any are provided. Pick the most substantial one available, even on a slow design day.
 - The script must stay within 250-350 words. Casual does not mean longer: keep each story to 60-80 words, and cut the weakest story rather than squeezing five in.
 - Every story you pick for the script must also appear in the structured "stories" output, referenced by its id.

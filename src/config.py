@@ -67,6 +67,10 @@ PODCAST_LANGUAGE = "en-AU"
 # per-source assumptions (which drift as sites change their feeds).
 FULL_TEXT_MIN_CHARS = 1500
 
+# Cap items kept per source per run so a high-volume outlet (TechCrunch runs
+# ~20 AI posts a day) can't crowd out the rest. Keeps the pool varied.
+MAX_ITEMS_PER_SOURCE = 5
+
 
 @dataclass
 class Source:
@@ -76,10 +80,21 @@ class Source:
 
 
 SOURCES = [
+    # --- AI news (broad spread of outlets so no single one dominates) ---
     Source("TechCrunch AI", "https://techcrunch.com/category/artificial-intelligence/feed/", "ai"),
+    Source("The Verge AI", "https://www.theverge.com/rss/ai-artificial-intelligence/index.xml", "ai"),
+    Source("Ars Technica AI", "https://arstechnica.com/ai/feed/", "ai"),
+    Source("MIT Technology Review AI", "https://www.technologyreview.com/topic/artificial-intelligence/feed/", "ai"),
+    Source("Wired AI", "https://www.wired.com/feed/tag/ai/latest/rss", "ai"),
+    Source("The Decoder", "https://the-decoder.com/feed/", "ai"),
+    Source("AI News", "https://www.artificialintelligence-news.com/feed/", "ai"),
     Source("MarkTechPost", "https://www.marktechpost.com/feed/", "ai"),
     Source("OpenAI News", "https://openai.com/news/rss.xml", "ai"),
+    Source("Google AI", "https://blog.google/technology/ai/rss/", "ai"),
+    Source("Google DeepMind", "https://deepmind.google/blog/rss.xml", "ai"),
     Source("Hugging Face Blog", "https://huggingface.co/blog/feed.xml", "ai"),
+    Source("Simon Willison", "https://simonwillison.net/atom/everything/", "ai"),
+    # --- Product / UX design ---
     Source("UX Collective", "https://uxdesign.cc/feed", "design"),
     Source("Nielsen Norman Group", "https://www.nngroup.com/feed/rss/", "design"),
     Source("Smashing Magazine", "https://www.smashingmagazine.com/feed/", "design"),
@@ -87,6 +102,10 @@ SOURCES = [
     Source("Fast Company Co.Design", "https://www.fastcompany.com/co-design/rss", "design"),
     Source("A List Apart", "https://alistapart.com/main/feed/", "design"),
     Source("Sidebar.io", "https://sidebar.io/feed.xml", "design"),
+    # Medium tag feeds - broad pool of recent UX/design writing (Medium has
+    # no "top-ranked" RSS, so Claude's selection step ranks these).
+    Source("Medium UX Design", "https://medium.com/feed/tag/ux-design", "design"),
+    Source("Medium UX Research", "https://medium.com/feed/tag/ux-research", "design"),
     # The Rundown AI, TLDR AI, and Ben's Bites have no native RSS; they are
     # scraped from their web archives instead - see src/newsletters.py.
 ]

@@ -3,7 +3,7 @@ from datetime import datetime, timedelta, timezone
 
 import feedparser
 
-from src.config import SOURCES, USER_AGENT
+from src.config import MAX_ITEMS_PER_SOURCE, SOURCES, USER_AGENT
 
 
 @dataclass
@@ -63,10 +63,15 @@ def fetch_recent_items(
             failed_sources.append(source.name)
             continue
 
-        for entry in feed.entries:
-            published = _entry_published(entry)
-            if published is None or published < cutoff:
-                continue
+        # Newest first, so the per-source cap keeps the freshest items.
+        recent = [
+            (p, entry)
+            for entry in feed.entries
+            if (p := _entry_published(entry)) is not None and p >= cutoff
+        ]
+        recent.sort(key=lambda pe: pe[0], reverse=True)
+
+        for published, entry in recent[:MAX_ITEMS_PER_SOURCE]:
             items.append(
                 Item(
                     title=entry.get("title", "").strip(),

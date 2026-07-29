@@ -37,17 +37,32 @@ def fetch_national_days(day: datetime) -> list[str]:
     return names[:15]
 
 
-# Clean-by-design subreddits first; r/Jokes is the volume fallback but its
-# candidates go through the same word filter below.
-JOKE_SUBREDDITS = [("cleanjokes", "week"), ("dadjokes", "day"), ("Jokes", "day")]
+# Pun-first subreddits, then cleanjokes; r/Jokes is the volume fallback and
+# its candidates go through the same word filter below.
+JOKE_SUBREDDITS = [
+    ("dadjokes", "day"),
+    ("punny", "week"),
+    ("cleanjokes", "week"),
+    ("Jokes", "day"),
+]
 
 # Substring blocklist - crude but it only has to be conservative, and Claude
 # gets the final say on what's office-appropriate from whatever survives.
 _NSFW_WORDS = re.compile(
-    r"\b(sex|sexual|schtup|shtup|porn|penis|dick|cock|vagina|boob|tit|breast|orgasm|"
-    r"masturbat\w*|erect\w*|horny|whore|slut|hooker|prostitut\w*|condom|viagra|"
-    r"fuck\w*|shit\w*|piss\w*|cunt|bastard|arsehole|asshole|butthole|anal|anus|"
-    r"rape|incest|pedo\w*|molest\w*|nazi|racist|suicide|abortion)\b",
+    r"\b(sex|sexual|schtup|shtup|porn|penis|dick|cock|vagina|boobs?|tits?|breasts?|"
+    r"orgasm|masturbat\w*|erect\w*|horny|whore|slut|hooker|prostitut\w*|condom|viagra|"
+    r"fuck\w*|shit\w*|piss\w*|cunt|bastard|arsehole|asshole|butthole|butt|butts|"
+    r"anal|anus|nipple|boner|fart|poop|pee|rape|incest|pedo\w*|molest\w*|"
+    r"nazi|racist|suicide|abortion)\b",
+    re.I,
+)
+
+# Gendered / relationship stereotype humour - the "my wife..." genre - is
+# off-limits per request even when otherwise clean.
+_GENDERED_WORDS = re.compile(
+    r"\b(wife|wives|husband|girlfriend|boyfriend|marriage|married|mother-in-law|"
+    r"father-in-law|blonde|blondes|feminis\w*|woman|women|man\b|men\b|"
+    r"girl|girls|guy|guys|lady|ladies|gender)\b",
     re.I,
 )
 
@@ -81,7 +96,7 @@ def fetch_reddit_jokes(limit: int = 10) -> list[str]:
             if not title or not body or len(body) >= 800:
                 continue
             joke = f"{title} ... {body}"
-            if _NSFW_WORDS.search(joke):
+            if _NSFW_WORDS.search(joke) or _GENDERED_WORDS.search(joke):
                 continue
             jokes.append(joke)
 
@@ -94,11 +109,12 @@ def fetch_reddit_jokes(limit: int = 10) -> list[str]:
 
 
 FALLBACK_JOKES = [
-    "I told my wife she was drawing her eyebrows too high ... She looked surprised.",
     "Why don't skeletons fight each other? ... They don't have the guts.",
     "I only know 25 letters of the alphabet ... I don't know y.",
     "What do you call a factory that makes okay products? ... A satisfactory.",
     "I used to hate facial hair ... but then it grew on me.",
+    "I'm reading a book about anti-gravity ... It's impossible to put down.",
+    "What do you call fake spaghetti? ... An impasta.",
 ]
 
 
