@@ -1,9 +1,31 @@
+import re
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
 
 import feedparser
 
 from src.config import MAX_ITEMS_PER_SOURCE, SOURCES, USER_AGENT
+
+# Medium tag feeds carry a lot of student coursework and personal newsletter
+# series. These signals (mostly in the article's tags) flag that noise so it
+# never reaches the summariser.
+_COURSE_CODE_RE = re.compile(r"^[a-z]{2,5}\d{3,5}[a-z]?$")  # e.g. nmix6010, jrmc7011e
+_NOISE_TAG_WORDS = {
+    "capstone-project", "capstone", "coursework", "assignment", "student-project",
+    "class-project", "nmi", "homework", "school-project",
+}
+_NOISE_TITLE_RE = re.compile(r"#\w+series|issue\s+\d+", re.I)  # e.g. "#BlessingSeries Issue 53"
+
+
+def _entry_is_noise(entry) -> bool:
+    tags = {t.get("term", "").strip().lower() for t in entry.get("tags", [])}
+    if tags & _NOISE_TAG_WORDS:
+        return True
+    if any(_COURSE_CODE_RE.match(t) for t in tags):
+        return True
+    if _NOISE_TITLE_RE.search(entry.get("title", "")):
+        return True
+    return False
 
 
 @dataclass
@@ -64,10 +86,14 @@ def fetch_recent_items(
             continue
 
         # Newest first, so the per-source cap keeps the freshest items.
+        # Coursework/newsletter-series noise is dropped before the cap so it
+        # never uses up a source's slots.
         recent = [
             (p, entry)
             for entry in feed.entries
-            if (p := _entry_published(entry)) is not None and p >= cutoff
+            if (p := _entry_published(entry)) is not None
+            and p >= cutoff
+            and not _entry_is_noise(entry)
         ]
         recent.sort(key=lambda pe: pe[0], reverse=True)
 

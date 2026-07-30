@@ -147,9 +147,9 @@ The joke (in toolkit_script):
 Rules for the script and stories:
 - Only use the stories provided below. Never invent stories, facts, or details not present in the source material.
 - Dedupe overlapping coverage of the same story; pick the single most informative source for it.
-- Pick the top 3-5 stories overall, mixing general AI news and product/UX design news.
+- Pick 4-5 stories overall with a genuine balance of AI and product/UX design - roughly half and half, not AI-heavy with one design token.
+- TARGET: 2-3 design stories and 2-3 AI stories. You MUST include at least 2 design stories whenever there are 3 or more distinct, decent design items to choose from. Only drop to a single design story if the design candidates are genuinely thin or weak that day - and never pad with filler to hit a number.
 - Favour source variety: don't take more than one story from the same outlet unless a second story there is genuinely bigger than anything from the other outlets. Spread the picks across different publishers.
-- REQUIRED: at least one chosen story must come from a design-category item whenever any are provided. Pick the most substantial one available, even on a slow design day.
 - The script must stay within 250-350 words. Casual does not mean longer: keep each story to 60-80 words, and cut the weakest story rather than squeezing five in.
 - Every story you pick for the script must also appear in the structured "stories" output, referenced by its id.
 - Items marked (toolkit) are for toolkit_updates and toolkit_script only, never for the script or stories.
@@ -212,11 +212,12 @@ class Episode:
         return self.script
 
 
-def _has_design_story(stories: list[dict], items: list[Item]) -> bool:
+def _count_design_stories(stories: list[dict], items: list[Item]) -> int:
     """Design coverage counts by topic, not by outlet - design-system and
     design-tooling stories often run in AI-category sources."""
-    return any(
-        s.get("topic") == "design" or items[s["id"]].category == "design" for s in stories
+    return sum(
+        1 for s in stories
+        if s.get("topic") == "design" or items[s["id"]].category == "design"
     )
 
 
@@ -249,13 +250,17 @@ def summarize(
     result = _call_claude(client, messages)
 
     # Constraints occasionally get ignored; one corrective retry covers them.
-    design_available = any(i.category == "design" for i in items)
+    design_available = sum(1 for i in items if i.category == "design")
+    # Require 2 design stories when the pool is rich (>=3 design items), else 1.
+    design_target = 2 if design_available >= 3 else min(design_available, 1)
     for attempt in range(2):
         problems = []
-        if design_available and not _has_design_story(result["stories"], all_items):
+        design_picked = _count_design_stories(result["stories"], all_items)
+        if design_picked < design_target:
             problems.append(
-                "Your selection contains no design-category story, but design items were "
-                "provided. Include at least one design-category story."
+                f"You included {design_picked} design story/stories but need at least "
+                f"{design_target}. {design_available} design items were provided - pick "
+                "the strongest additional design one(s)."
             )
         word_count = len(result["script"].split())
         if word_count > 350:
