@@ -1,0 +1,349 @@
+<title>AI UX Porridge — Build Notes</title>
+<style>
+  :root {
+    --ink: #23271f;
+    --ink-soft: #4a4636;
+    --paper: #f1ede2;
+    --paper-raised: #e7e1d1;
+    --rule: #d8d0ba;
+    --brass: #93641f;
+    --brass-strong: #7a5119;
+    --teal: #2f5c56;
+    --mono-chip: #e5ddc7;
+    --shadow: 0 1px 0 rgba(35,39,31,0.06);
+  }
+  :root[data-theme="dark"] {
+    --ink: #ece5d2;
+    --ink-soft: #b9ae91;
+    --paper: #1a1b15;
+    --paper-raised: #232419;
+    --rule: #3a392a;
+    --brass: #dcae5b;
+    --brass-strong: #eec27a;
+    --teal: #7fb0a7;
+    --mono-chip: #262719;
+    --shadow: 0 1px 0 rgba(0,0,0,0.3);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ink: #ece5d2;
+      --ink-soft: #b9ae91;
+      --paper: #1a1b15;
+      --paper-raised: #232419;
+      --rule: #3a392a;
+      --brass: #dcae5b;
+      --brass-strong: #eec27a;
+      --teal: #7fb0a7;
+      --mono-chip: #262719;
+      --shadow: 0 1px 0 rgba(0,0,0,0.3);
+    }
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    line-height: 1.6;
+    font-size: 16.5px;
+    -webkit-font-smoothing: antialiased;
+  }
+  ::selection { background: var(--brass); color: var(--paper); }
+
+  .mast {
+    padding: 3.2rem 1.5rem 1.6rem;
+    text-align: center;
+    border-bottom: 3px double var(--rule);
+  }
+  .mast .kicker {
+    font-family: ui-monospace, "SF Mono", "Cascadia Code", Consolas, monospace;
+    font-size: 0.72rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--brass-strong);
+    margin: 0 0 0.9rem;
+  }
+  .mast h1 {
+    font-family: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+    font-weight: 600;
+    font-size: clamp(2.1rem, 5vw, 3rem);
+    margin: 0 0 0.6rem;
+    text-wrap: balance;
+  }
+  .mast p.dek {
+    font-size: 1.02rem;
+    color: var(--ink-soft);
+    max-width: 34rem;
+    margin: 0 auto;
+    text-wrap: balance;
+  }
+  .mast .meta {
+    margin-top: 1.4rem;
+    font-family: ui-monospace, "SF Mono", Consolas, monospace;
+    font-size: 0.78rem;
+    color: var(--ink-soft);
+    display: flex;
+    gap: 1.4rem;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  main {
+    max-width: 42rem;
+    margin: 0 auto;
+    padding: 2.8rem 1.5rem 5rem;
+  }
+
+  section { margin-bottom: 3.2rem; }
+  section:last-child { margin-bottom: 0; }
+
+  h2 {
+    font-family: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+    font-weight: 600;
+    font-size: 1.45rem;
+    margin: 0 0 1rem;
+    display: flex;
+    align-items: baseline;
+    gap: 0.6rem;
+  }
+  h2 .num {
+    font-family: ui-monospace, "SF Mono", Consolas, monospace;
+    font-size: 0.85rem;
+    color: var(--brass);
+    font-weight: 500;
+  }
+
+  p { margin: 0 0 1rem; max-width: 40em; }
+  p.lead {
+    font-size: 1.08rem;
+    color: var(--ink-soft);
+  }
+
+  code, .code {
+    font-family: ui-monospace, "SF Mono", "Cascadia Code", Consolas, monospace;
+    font-size: 0.86em;
+    background: var(--mono-chip);
+    padding: 0.1em 0.4em;
+    border-radius: 4px;
+  }
+
+  /* process timeline — a real chronological sequence, numbers carry meaning */
+  .timeline { list-style: none; margin: 0; padding: 0; }
+  .timeline li {
+    position: relative;
+    padding: 0 0 1.6rem 2.2rem;
+    border-left: 2px solid var(--rule);
+  }
+  .timeline li:last-child { border-left-color: transparent; padding-bottom: 0; }
+  .timeline li::before {
+    content: attr(data-phase);
+    position: absolute;
+    left: -0.62rem;
+    top: 0.1rem;
+    width: 1.15rem;
+    height: 1.15rem;
+    border-radius: 50%;
+    background: var(--paper);
+    border: 2px solid var(--brass);
+    color: var(--brass);
+    font-family: ui-monospace, monospace;
+    font-size: 0.62rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .timeline h3 {
+    margin: 0 0 0.35rem;
+    font-size: 1.02rem;
+    font-weight: 700;
+  }
+  .timeline p { margin: 0; color: var(--ink-soft); font-size: 0.96rem; }
+
+  /* pipeline steps — literal execution order, styled like a method */
+  .pipeline {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 0;
+    border: 1px solid var(--rule);
+    border-radius: 10px;
+    overflow: hidden;
+    background: var(--paper-raised);
+  }
+  .pipeline li {
+    display: grid;
+    grid-template-columns: 2.4rem 1fr;
+    gap: 0.9rem;
+    padding: 0.85rem 1rem;
+    border-bottom: 1px solid var(--rule);
+    align-items: start;
+  }
+  .pipeline li:last-child { border-bottom: none; }
+  .pipeline .step-n {
+    font-family: ui-monospace, monospace;
+    color: var(--brass);
+    font-weight: 700;
+    font-size: 0.85rem;
+    padding-top: 0.15rem;
+  }
+  .pipeline .step-name { font-weight: 700; font-size: 0.96rem; }
+  .pipeline .step-desc { color: var(--ink-soft); font-size: 0.9rem; margin-top: 0.15rem; }
+
+  /* stack table */
+  table.stack {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.92rem;
+  }
+  table.stack th {
+    text-align: left;
+    font-family: ui-monospace, monospace;
+    font-size: 0.7rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    font-weight: 600;
+    padding: 0 0.8rem 0.6rem 0;
+    border-bottom: 1px solid var(--rule);
+  }
+  table.stack td {
+    padding: 0.65rem 0.8rem 0.65rem 0;
+    border-bottom: 1px solid var(--rule);
+    vertical-align: top;
+  }
+  table.stack tr:last-child td { border-bottom: none; }
+  table.stack td.role { color: var(--teal); font-weight: 600; white-space: nowrap; }
+  table.stack td.desc { color: var(--ink-soft); }
+
+  /* decision callouts */
+  .decisions { display: grid; gap: 0.9rem; }
+  .decision {
+    border-left: 3px solid var(--teal);
+    padding: 0.15rem 0 0.15rem 1rem;
+  }
+  .decision .label {
+    font-family: ui-monospace, monospace;
+    font-size: 0.68rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--teal);
+    margin-bottom: 0.25rem;
+  }
+  .decision p { margin: 0; font-size: 0.94rem; color: var(--ink-soft); }
+  .decision strong { color: var(--ink); }
+
+  footer {
+    text-align: center;
+    padding: 2rem 1.5rem 3rem;
+    font-family: ui-monospace, monospace;
+    font-size: 0.75rem;
+    color: var(--ink-soft);
+  }
+
+  @media (max-width: 480px) {
+    .pipeline li { grid-template-columns: 1.8rem 1fr; }
+  }
+</style>
+
+<div class="mast">
+  <p class="kicker">Build Notes · Internal</p>
+  <h1>AI UX Porridge</h1>
+  <p class="dek">How a five-minute daily podcast about AI &amp; product design gets made, end to end, with no one at the keyboard.</p>
+  <div class="meta">
+    <span>Solo build</span>
+    <span>Python 3.12</span>
+    <span>$0/mo infra</span>
+  </div>
+</div>
+
+<main>
+
+  <section>
+    <h2><span class="num">01</span> What it is</h2>
+    <p class="lead">A fully automated daily podcast: a 1–2 minute audio briefing on AI and product design news, plus a companion email digest, delivered every weekday morning before 5am AEST. No manual step in the loop — it fetches, writes, voices, and publishes itself.</p>
+    <p>It ships as a real podcast RSS feed (subscribed in Pocket Casts) hosted on GitHub Pages, with the source feeds, the script, and the audio all regenerated fresh each morning.</p>
+  </section>
+
+  <section>
+    <h2><span class="num">02</span> The process</h2>
+    <ol class="timeline">
+      <li data-phase="1">
+        <h3>Wrote the brief before writing code</h3>
+        <p>Locked in the goal, the stack, the sources, and the acceptance criteria in a short doc first — including the constraint that it had to run for close to $0/month. That doc is the spec I kept building back against.</p>
+      </li>
+      <li data-phase="2">
+        <h3>Built it local-first</h3>
+        <p>Got one command producing a listenable MP3 from real feed items before touching any automation. Iterated on the Claude prompt (tone, length, story selection) and the TTS voice entirely by ear at this stage.</p>
+      </li>
+      <li data-phase="3">
+        <h3>Wrapped it in automation</h3>
+        <p>Moved the working pipeline into a scheduled GitHub Actions workflow. Made it fail loudly on a broken run rather than silently publish a bad or empty episode, and skip publishing outright on a genuinely quiet news day.</p>
+      </li>
+      <li data-phase="4">
+        <h3>Tuned it by listening</h3>
+        <p>Kept refining post-launch from actually hearing the episodes: narrowed noisy sources, tightened joke length, added a pun to the opening, and rotated the host voice across accents so it doesn't sound like the same person every day.</p>
+      </li>
+    </ol>
+  </section>
+
+  <section>
+    <h2><span class="num">03</span> The stack</h2>
+    <table class="stack">
+      <thead>
+        <tr><th>Role</th><th>Tool</th><th>Why</th></tr>
+      </thead>
+      <tbody>
+        <tr><td class="role">Feeds</td><td><span class="code">feedparser</span></td><td class="desc">Pulls the last 24h from AI &amp; design RSS sources</td></tr>
+        <tr><td class="role">Scraping</td><td><span class="code">trafilatura</span></td><td class="desc">Extracts clean article text for newsletters with no native RSS</td></tr>
+        <tr><td class="role">Writing</td><td>Claude API (Haiku)</td><td class="desc">Dedupes overlapping stories, picks the top 3–5, writes the script — cheap enough to run daily for cents</td></tr>
+        <tr><td class="role">Voice</td><td><span class="code">edge-tts</span></td><td class="desc">Free neural TTS; rotates across a 20-voice, 10-accent pool</td></tr>
+        <tr><td class="role">Feed</td><td><span class="code">feedgen</span></td><td class="desc">Builds valid podcast RSS 2.0 with iTunes tags and enclosures</td></tr>
+        <tr><td class="role">Schedule</td><td>GitHub Actions</td><td class="desc">Cron trigger, runs the whole pipeline unattended each weekday</td></tr>
+        <tr><td class="role">Hosting</td><td>GitHub Pages</td><td class="desc">Serves the MP3s and feed.xml directly from the repo, no server</td></tr>
+        <tr><td class="role">Digest</td><td>Gmail SMTP</td><td class="desc">Sends the companion email summary alongside the audio</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section>
+    <h2><span class="num">04</span> The pipeline, in order</h2>
+    <ol class="pipeline">
+      <li><span class="step-n">1</span><div><div class="step-name">Fetch</div><div class="step-desc">Pull items from the last 24h across all RSS sources, plus scrape three newsletters that have no feed</div></div></li>
+      <li><span class="step-n">2</span><div><div class="step-name">Extract</div><div class="step-desc">Fetch full article text for any item whose feed content is just a short excerpt</div></div></li>
+      <li><span class="step-n">3</span><div><div class="step-name">Dedupe</div><div class="step-desc">Cluster near-identical headlines across sources, keep the most detailed version</div></div></li>
+      <li><span class="step-n">4</span><div><div class="step-name">Garnish</div><div class="step-desc">Fetch today's national/world day and a candidate joke from Reddit — both optional</div></div></li>
+      <li><span class="step-n">5</span><div><div class="step-name">Summarise</div><div class="step-desc">Claude picks the top stories, writes the spoken script, and drafts the email digest in one structured call</div></div></li>
+      <li><span class="step-n">6</span><div><div class="step-name">Voice</div><div class="step-desc">Synthesise the script to MP3 with the day's rotated voice</div></div></li>
+      <li><span class="step-n">7</span><div><div class="step-name">Publish</div><div class="step-desc">Append the episode to feed.xml, prune anything past the 30-episode retention window, commit and push</div></div></li>
+      <li><span class="step-n">8</span><div><div class="step-name">Notify</div><div class="step-desc">Email the digest with the audio link, story summaries, and toolkit updates</div></div></li>
+    </ol>
+  </section>
+
+  <section>
+    <h2><span class="num">05</span> Decisions worth explaining</h2>
+    <div class="decisions">
+      <div class="decision">
+        <div class="label">Fail loud vs. fail soft</div>
+        <p><strong>Core sources failing is an error; garnish failing isn't.</strong> If every news source fails, the run stops rather than publishing an empty episode. If the joke or national-day fetch fails, the episode just publishes without them.</p>
+      </div>
+      <div class="decision">
+        <div class="label">Quiet days skip, they don't pad</div>
+        <p><strong>No new items in 24h means no episode that day</strong>, rather than stretching thin news into a full script.</p>
+      </div>
+      <div class="decision">
+        <div class="label">Deterministic voice rotation</div>
+        <p><strong>The daily voice is picked by hashing the date</strong>, not randomly — so re-running the same day's episode always gets the same voice, but different days land on different accents.</p>
+      </div>
+      <div class="decision">
+        <div class="label">Retention cap</div>
+        <p><strong>Only the latest 30 episodes are kept</strong>, older MP3s and feed entries are pruned automatically, keeping the repo (and Pages hosting) small forever.</p>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer>feed.xml · episodes.json · Pocket Casts</footer>

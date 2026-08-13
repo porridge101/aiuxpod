@@ -79,7 +79,15 @@ def fetch_recent_items(
     failed_sources: list[str] = []
 
     for source in sources if sources is not None else SOURCES:
-        feed = feedparser.parse(source.url, request_headers={"User-Agent": USER_AGENT})
+        try:
+            feed = feedparser.parse(source.url, request_headers={"User-Agent": USER_AGENT})
+        except Exception as e:
+            # feedparser's own malformed-XML errors land in feed.bozo and are
+            # handled below, but network-level failures (connection reset,
+            # DNS, timeout) raise here and would otherwise crash the whole run.
+            print(f"  WARNING: could not fetch {source.name} ({source.url}): {e}")
+            failed_sources.append(source.name)
+            continue
         if feed.bozo and not feed.entries:
             print(f"  WARNING: could not parse {source.name} ({source.url}): {feed.bozo_exception}")
             failed_sources.append(source.name)
